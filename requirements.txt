@@ -10,7 +10,7 @@ DateTime==5.5
 loguru==0.7.2
 pydantic==2.9.2
 pydantic-settings==2.5.2
-pydantic_core==2.24.0
+pydantic_core==2.23.4
 pyjsparser==2.7.1
 Pyrogram==2.0.106
 PySocks==1.7.1
