@@ -4,9 +4,12 @@ from time import time
 from urllib.parse import unquote, quote
 
 import aiohttp
+import requests
+
 from aiocfscrape import CloudflareScraper
 from aiohttp_proxy import ProxyConnector
 from better_proxy import Proxy
+from pycparser.ply.lex import NullLogger
 from pyrogram import Client
 from pyrogram.errors import Unauthorized, UserDeactivated, AuthKeyUnregistered, FloodWait
 from pyrogram.raw import functions
@@ -20,13 +23,12 @@ from .headers import headers
 
 from random import randint
 
-
 class Tapper:
     def __init__(self, tg_client: Client):
         self.tg_client = tg_client
         self.session_name = tg_client.name
         self.user_id = 0
-        self.country = 'US'
+        self.country = 'MD'
         self.locale = 'en'
         self.headers = ''
 
@@ -49,17 +51,6 @@ class Tapper:
             if not self.tg_client.is_connected:
                 try:
                     await self.tg_client.connect()
-                    if settings.USE_REF:
-                        peer = await self.tg_client.resolve_peer('trust_empire_bot')
-                        await self.tg_client.invoke(
-                            functions.messages.StartBot(
-                                bot=peer,
-                                peer=peer,
-                                start_param=get_link_code(),
-                                random_id=randint(1, 9999999),
-                            )
-                        )
-
                 except (Unauthorized, UserDeactivated, AuthKeyUnregistered):
                     raise InvalidSession(self.session_name)
 
@@ -124,8 +115,7 @@ class Tapper:
 
     async def get_rewards(self, http_client: aiohttp.ClientSession):
         try:
-            params = 'user_id=' + str(self.user_id) + '&locale=' + self.locale
-            response = await http_client.get(f'https://new.trstempire.com/api/v1/rewards?{params}')
+            response = await http_client.get(f'https://new.trstempire.com/api/v1/rewards')
             response.raise_for_status()
 
             response_json = await response.json()
@@ -150,6 +140,19 @@ class Tapper:
             logger.error(f"{self.session_name} | Unknown error when getting level reward: {error}")
             await asyncio.sleep(delay=randint(3, 7))
             return False
+
+    async def apply_reward(self, http_client: aiohttp.ClientSession):
+        try:
+            url = 'https://new.trstempire.com/api/v1/boost-cards/apply-reward'
+
+            response = requests.post(url=url, headers=http_client.headers)
+            response.raise_for_status()
+            response_json = response.json()
+            return response_json
+
+        except Exception as error:
+            logger.error(f"{self.session_name} | Unknown error when apply reward: {error}")
+            await asyncio.sleep(delay=randint(3, 7))
 
     async def get_notifications(self, http_client: aiohttp.ClientSession):
         try:
@@ -340,68 +343,62 @@ class Tapper:
             await asyncio.sleep(delay=3)
 
     async def run(self, proxy: str | None) -> None:
-        access_token_created_time = 0
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
-
-        headers["User-Agent"] = generate_random_user_agent(device_type='android', browser_type='chrome')
-        http_client = CloudflareScraper(headers=headers, connector=proxy_conn)
-
         if proxy:
             await self.check_proxy(http_client=http_client, proxy=proxy)
 
-        token_live_time = randint(3500, 3600)
         while True:
             try:
-                if time() - access_token_created_time >= token_live_time:
-                    tg_web_data = await self.get_tg_web_data(proxy=proxy)
-                    init_params = tg_web_data + '&start_param=' + get_link_code()
-                    http_client.headers['Authorization'] = f'tma {self.headers}'
-                    user_info = await self.get_info_data(http_client=http_client, init_params=init_params)
+                http_client = CloudflareScraper(headers=headers, connector=proxy_conn)
+                tg_web_data = await self.get_tg_web_data(proxy=proxy)
 
-                    if user_info.get('country') is None:
-                        await self.set_country_code(http_client=http_client)
+                init_params = tg_web_data + '&start_param='
+                http_client.headers['Authorization'] = f'tma {self.headers}'
+                user_info = await self.get_info_data(http_client=http_client, init_params=init_params)
 
-                    access_token_created_time = time()
-                    token_live_time = randint(3500, 3600)
+                if user_info.get('country') is None:
+                    await self.set_country_code(http_client=http_client)
 
-                    balance = user_info['balance']
-                    level_data = user_info['level']
-                    level = level_data['level']
-                    to_next_level = level_data['to_next_level']
+                balance = user_info['balance']
+                level_data = user_info['level']
+                level = level_data['level']
+                to_next_level = level_data['to_next_level']
 
-                    await self.get_rewards(http_client=http_client)
-                    notifications = await self.get_notifications(http_client=http_client)
-                    for notify in notifications:
-                        if notify['name'] == "next_level_reached" and notify['state'] == 'pending':
-                            level = notify['data']['level']
-                            reward = notify['data']['reward']
-                            logger.info(f"{self.session_name} | Next Level Reached! | Getting rewards..")
-                            await asyncio.sleep(delay=3)
-                            result = await self.get_level_reward(http_client=http_client, level=level)
-                            if result:
-                                logger.success(f"{self.session_name} | | Got level reward: <e>{reward}</e> points")
-                            await asyncio.sleep(delay=randint(3, 8))
+                rewards = await self.get_rewards(http_client=http_client)
+                logger.success(f"{self.session_name} | Bot action: <red>[rewards]</red>: <c>{rewards}</c>")
+                await asyncio.sleep(delay=randint(3, 8))
+                areward = await self.apply_reward(http_client=http_client)
+                logger.success(f"{self.session_name} | Bot action: <red>[apply_reward]</red>: <c>{areward}</c>")
 
-                    logger.info(f"{self.session_name} | Balance: <e>{balance}</e> | User level: <y>{level}</y> | "
-                                f"<c>{to_next_level}</c> points to the next level")
+                notifications = await self.get_notifications(http_client=http_client)
+                for notify in notifications:
+                    if notify['name'] == "next_level_reached" and notify['state'] == 'pending':
+                        level = notify['data']['level']
+                        reward = notify['data']['reward']
+                        logger.info(f"{self.session_name} | Next Level Reached! | Getting rewards..")
+                        await asyncio.sleep(delay=3)
+                        result = await self.get_level_reward(http_client=http_client, level=level)
+                        if result:
+                            logger.success(f"{self.session_name} | | Got level reward: <e>{reward}</e> points")
+                        await asyncio.sleep(delay=randint(3, 8))
 
-                    await self.processing_tasks(http_client=http_client)
+                logger.info(f"{self.session_name} | Balance: <e>{balance}</e> | User level: <y>{level}</y> | "
+                            f"<c>{to_next_level}</c> points to the next level")
 
-                    sleep_time = randint(settings.SLEEP_TIME[0], settings.SLEEP_TIME[1])
-                    logger.info(f"{self.session_name} | All tasks completed | Sleep <y>{sleep_time}</y> seconds")
-                    await asyncio.sleep(delay=sleep_time)
+                await self.processing_tasks(http_client=http_client)
+
+                sleep_time = randint(settings.SLEEP_TIME[0], settings.SLEEP_TIME[1])
+                logger.info(f"{self.session_name} | All tasks completed | Sleep <y>{sleep_time}</y> seconds")
+                await http_client.close()
+                await asyncio.sleep(delay=sleep_time)
 
             except InvalidSession as error:
                 raise error
 
             except Exception as error:
                 logger.error(f"{self.session_name} | Unknown error: {error}")
-                await asyncio.sleep(delay=randint(60, 120))
-
-
-def get_link_code() -> str:
-    return bytes([106, 119, 71, 86, 102, 118, 122, 115, 83, 77, 85, 100, 85, 100,
-                  112, 65, 84, 86, 81, 72]).decode("utf-8") if settings.USE_REF else ''
+                await http_client.close()
+                await asyncio.sleep(delay=randint(60, 300))
 
 
 async def run_tapper(tg_client: Client, proxy: str | None):

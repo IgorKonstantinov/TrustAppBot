@@ -1,10 +1,6 @@
-[![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/trust_empire_bot/trust_app?startapp=jwGVfvzsSMUdUdpATVQH)
-
 ## Recommendation before use
 
 # 🔥🔥 Use PYTHON 3.10 🔥🔥
-
-> 🇷 🇺 README in russian available [here](README-RU.md)
 
 ## Features  
 | Feature                                                   | Supported |
@@ -100,10 +96,6 @@ You can also use arguments for quick start, for example:
 # 2 - Creates a session
 ```
 
-### Contacts
 
-For support or questions, you can contact me
-
-[![Static Badge](https://img.shields.io/badge/Telegram-Channel-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/desforge_crypto)
 
 

@@ -114,6 +114,6 @@ async def run_tasks(tg_clients: list[Client]):
         tasks.append(asyncio.create_task(run_tapper(
             tg_client=tg_client,
             proxy=next(proxies_cycle) if proxies_cycle else None)))
-        await asyncio.sleep(delay=randint(settings.START_DELAY[0], settings.START_DELAY[1]))
+        await asyncio.sleep(delay=randint(*settings.START_DELAY))
 
     await asyncio.gather(*tasks)
