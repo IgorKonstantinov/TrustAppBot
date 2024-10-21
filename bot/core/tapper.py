@@ -229,8 +229,9 @@ class Tapper:
 
             if not current_task.get('isCompleted'):
                 json_data = {
-                    'user_id': self.user_id,
-                    'task_id': current_task['_id']
+                    'task_id': current_task['_id'],
+                    'task_name': current_task['name'],
+                    'task_type': current_task['type'],
                 }
                 response = await http_client.post(f'https://new.trstempire.com/api/v1/tasks/complete', json=json_data)
                 response.raise_for_status()
@@ -300,7 +301,7 @@ class Tapper:
                 'task_id': task_id,
                 'reward': reward
             }
-            response = await http_client.post(f'https://new.trstempire.com/api/v1/tasks/complete', json=json_data)
+            response = await http_client.post(f'https://new.trstempire.com/api/v1/tasks/fortune-spin/complete', json=json_data)
             response.raise_for_status()
             response_json = await response.json()
 
@@ -398,7 +399,7 @@ class Tapper:
             except Exception as error:
                 logger.error(f"{self.session_name} | Unknown error: {error}")
                 await http_client.close()
-                await asyncio.sleep(delay=randint(60, 300))
+                await asyncio.sleep(delay=randint(300, 600))
 
 
 async def run_tapper(tg_client: Client, proxy: str | None):
