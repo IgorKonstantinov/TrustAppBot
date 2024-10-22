@@ -152,7 +152,7 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when apply reward: {error}")
-            await asyncio.sleep(delay=randint(3, 7))
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def get_notifications(self, http_client: aiohttp.ClientSession):
         try:
@@ -165,7 +165,7 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when getting notifications: {error}")
-            await asyncio.sleep(delay=randint(3, 7))
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def check_proxy(self, http_client: aiohttp.ClientSession, proxy: Proxy) -> None:
         try:
@@ -174,6 +174,7 @@ class Tapper:
             logger.info(f"{self.session_name} | Proxy IP: {ip}")
         except Exception as error:
             logger.error(f"{self.session_name} | Proxy: {proxy} | Error: {error}")
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def join_tg_channel(self, link: str):
         if not self.tg_client.is_connected:
@@ -181,6 +182,7 @@ class Tapper:
                 await self.tg_client.connect()
             except Exception as error:
                 logger.error(f"{self.session_name} | Error while TG connecting: {error}")
+                await asyncio.sleep(delay=randint(30, 60))
 
         try:
             parsedLink = link if 'https://t.me/+' in link else link[13:]
@@ -201,6 +203,7 @@ class Tapper:
                 await self.tg_client.disconnect()
         except Exception as error:
             logger.error(f"{self.session_name} | Error while join tg channel: {error}")
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def set_country_code(self, http_client: aiohttp.ClientSession):
         try:
@@ -219,6 +222,7 @@ class Tapper:
                 logger.success(f"{self.session_name} | Country is set | Current country: {self.country}")
         except Exception as error:
             logger.error(f"{self.session_name} | Error while setting country code: {error}")
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def claim_daily(self, http_client: aiohttp.ClientSession, tasks: list[dict[str, str]]):
         try:
@@ -234,17 +238,16 @@ class Tapper:
                     'task_type': current_task['type'],
                 }
                 response = await http_client.post(f'https://new.trstempire.com/api/v1/tasks/complete', json=json_data)
-                response.raise_for_status()
-                response_json = await response.json()
-
-                if response_json.get('active'):
-                    logger.success(
-                        f"{self.session_name} | Daily Claimed! | Reward: <e>{response_json['reward']}</e> |"
-                        f" Day count: <g>{response_json['day']}</g>")
+                if response.ok:
+                    response.raise_for_status()
+                    logger.success(f"{self.session_name} | Daily Claimed! | <e>{response.text()}</e>")
+                    return True
+                else:
+                    return False
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when Daily Claiming: {error}")
-            await asyncio.sleep(delay=3)
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def processing_tasks(self, http_client: aiohttp.ClientSession):
         try:
@@ -291,7 +294,7 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when completing tasks: {error}")
-            await asyncio.sleep(delay=3)
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def claim_fortune_reward(self, http_client: aiohttp.ClientSession, task_id: str):
         try:
@@ -310,7 +313,7 @@ class Tapper:
 
         except Exception as error:
             logger.error(f"{self.session_name} | Unknown error when claiming fortune reward: {error}")
-            await asyncio.sleep(delay=3)
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def perform_task(self, http_client: aiohttp.ClientSession, task_id: str):
         try:
@@ -325,7 +328,7 @@ class Tapper:
 
         except Exception as e:
             logger.error(f"{self.session_name} | Unknown error while check in task {task_id} | Error: {e}")
-            await asyncio.sleep(delay=3)
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def perform_tg_task(self, http_client: aiohttp.ClientSession, task_id: str):
         try:
@@ -341,7 +344,7 @@ class Tapper:
 
         except Exception as e:
             logger.error(f"{self.session_name} | Unknown error while check tg subscription for {task_id} | Error: {e}")
-            await asyncio.sleep(delay=3)
+            await asyncio.sleep(delay=randint(30, 60))
 
     async def run(self, proxy: str | None) -> None:
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
