@@ -255,17 +255,17 @@ class Tapper:
             response.raise_for_status()
             tasks_json = await response.json()
 
-            daily_tasks = tasks_json['dailyTasks']['tasks']
-            fortune_task = tasks_json['fortuneSpinTask']
-            tasks = tasks_json['trustTasks'] + tasks_json['partnerTasks']
+            daily_tasks = tasks_json.get('dailyTasks').get('tasks')
+            fortune_task = tasks_json.get('fortuneSpinTask')
+            tasks = tasks_json.get('trustTasks') + tasks_json.get('partnerTasks')
 
             await self.claim_daily(http_client=http_client, tasks=daily_tasks)
             await asyncio.sleep(delay=3)
-            fortune_claim_time = fortune_task['nextSpin']
+            fortune_claim_time = fortune_task.get('nextSpin')
             parsed_time = datetime.strptime(fortune_claim_time, '%Y-%m-%dT%H:%M:%S.%fZ').timestamp()
             delta_time = parsed_time - datetime.utcnow().timestamp()
             if delta_time < 0:
-                await self.claim_fortune_reward(http_client=http_client, task_id=fortune_task['_id'])
+                await self.claim_fortune_reward(http_client=http_client, task_id=fortune_task.get('_id'))
                 await asyncio.sleep(delay=3)
 
             if settings.AUTO_TASK:
