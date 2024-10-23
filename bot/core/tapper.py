@@ -239,7 +239,7 @@ class Tapper:
                 }
                 response = await http_client.post(f'https://new.trstempire.com/api/v1/tasks/complete', json=json_data)
                 if response.ok:
-                    logger.success(f"{self.session_name} | Daily Claimed!</e>")
+                    logger.success(f"{self.session_name} | <e>Daily Claimed!</e>")
                     return True
                 else:
                     return False
